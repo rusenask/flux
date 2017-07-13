@@ -1,6 +1,7 @@
 package server
 
 import (
+	reallog "log"
 	"sync/atomic"
 	"time"
 
@@ -143,6 +144,7 @@ func (s *Server) SyncStatus(instID flux.InstanceID, ref string) (res []string, e
 // LogEvent receives events from fluxd and pushes events to the history
 // db and a slack notification
 func (s *Server) LogEvent(instID flux.InstanceID, e history.Event) error {
+	reallog.Printf("[LogEvent] starting for %s", e)
 	helper, err := s.instancer.Get(instID)
 	if err != nil {
 		return errors.Wrapf(err, "getting instance")
@@ -158,6 +160,7 @@ func (s *Server) LogEvent(instID flux.InstanceID, e history.Event) error {
 	if err != nil {
 		return errors.Wrapf(err, "getting config")
 	}
+	reallog.Printf("[LogEvent] sending %s to slack", e)
 	err = notifications.Event(cfg, e)
 	if err != nil {
 		return errors.Wrapf(err, "notifying slack")

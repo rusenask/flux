@@ -127,6 +127,14 @@ func slackNotifyAutoRelease(config flux.NotifierConfig, release *history.AutoRel
 	})
 }
 
+func slackNotifySync(config flux.NotifierConfig, sync *history.Event) error {
+	return notify(config, SlackMsg{
+		Username:    config.Username,
+		Text:        fmt.Sprintf("%s", sync),
+		Attachments: []SlackAttachment{},
+	})
+}
+
 func slackResultAttachment(res update.Result) SlackAttachment {
 	buf := &bytes.Buffer{}
 	update.PrintResults(buf, res, false)
