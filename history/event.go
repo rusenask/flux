@@ -128,7 +128,10 @@ func (e Event) String() string {
 		}
 		return fmt.Sprintf("Commit: %s, %s", shortRevision(metadata.Revision), svcStr)
 	case EventSync:
-		metadata := e.Metadata.(*SyncEventMetadata)
+		metadata, ok := e.Metadata.(*SyncEventMetadata)
+		if !ok {
+			return fmt.Sprintf("Sync: unable to cast metadata to SyncEventMetadata")
+		}
 		revStr := "<no revision>"
 		if 0 < len(metadata.Revisions) && len(metadata.Revisions) <= 2 {
 			revStr = shortRevision(metadata.Revisions[0])
