@@ -201,7 +201,6 @@ func main() {
 	// Registry components
 	var cache registry.Registry
 	var cacheWarmer registry.Warmer
-	var warmerQueue registry.Queue
 	{
 		// Cache
 		var memcacheClient registryMemcache.Client
@@ -237,12 +236,6 @@ func main() {
 		})
 
 		// Warmer
-		queueLogger := log.NewContext(logger).With("component", "warmer_queue")
-		warmerQueue = registry.NewQueue(
-			servicesToRepositories(k8s, queueLogger),
-			queueLogger,
-			100*time.Millisecond,
-		)
 		warmerLogger := log.NewContext(logger).With("component", "warmer")
 		cacheWarmer = registry.Warmer{
 			Logger:        warmerLogger,
@@ -366,16 +359,16 @@ func main() {
 	}
 
 	daemon := &daemon.Daemon{
-		V:                    version,
-		Cluster:              k8s,
-		Manifests:            k8sManifests,
-		Registry:             cache,
-		Repo:           repo,Checkout:             checkout,
-		Jobs:                 jobs,
-		JobStatusCache:       &job.StatusCache{Size: 100},
+		V:         version,
+		Cluster:   k8s,
+		Manifests: k8sManifests,
+		Registry:  cache,
+		Repo:      repo, Checkout: checkout,
+		Jobs:           jobs,
+		JobStatusCache: &job.StatusCache{Size: 100},
 
-		EventWriter:          eventWriter,
-		Logger:               log.NewContext(logger).With("component", "daemon"),LoopVars: &daemon.LoopVars{
+		EventWriter: eventWriter,
+		Logger:      log.NewContext(logger).With("component", "daemon"), LoopVars: &daemon.LoopVars{
 			GitPollInterval:      *gitPollInterval,
 			RegistryPollInterval: *registryPollInterval,
 		},
@@ -387,10 +380,7 @@ func main() {
 	go daemon.ImagePollLoop(shutdown, shutdownWg, log.NewContext(logger).With("component", "image-poll-loop"))
 
 	shutdownWg.Add(1)
-	go warmerQueue.Loop(shutdown, shutdownWg)
-
-	shutdownWg.Add(1)
-	go cacheWarmer.Loop(shutdown, shutdownWg, warmerQueue.Queue())
+	go cacheWarmer.Loop(shutdown, shutdownWg, servicesToRepositories(k8s, cacheWarmer.Logger))
 
 	// Update daemonRef so that upstream and handlers point to fully working daemon
 	daemonRef.UpdatePlatform(daemon)
